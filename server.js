@@ -11,7 +11,7 @@ const db = mysql.createConnection(
     console.log(`Connected to the employees_db database.`)
 );
 
-function start {
+function start() {
     inquirer
         .prompt({
             type: 'list',
@@ -31,3 +31,24 @@ function start {
         })
 };
 
+function viewAllEmployees() {
+    const query = `SELECT * FROM department`;
+    db.query(query, function(err, res){
+        if (err) throw err;
+        console.table(res);
+        start();
+    });
+};
+
+function viewAllRoles() {
+    const query = ``
+}
+
+function viewAllDepartments() {
+    const query = `SELECT id, name AS "department" FROM department`
+    db.query(query, function(err, res){
+        if (err) throw err;
+        console.table(res);
+        start();
+});
+};
