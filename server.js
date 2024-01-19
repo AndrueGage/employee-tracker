@@ -2,11 +2,11 @@ const inquirer = require("inquirer");
 const mysql = require('mysql2');
 
 const db = mysql.createConnection(
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASSWORD,
     {
         host: 'localhost',
-        user: 'root',
-        password: '3sq`XYQ*ES',
-        database: 'employees_db'
     },
     console.log(`Connected to the employees_db database.`)
 );
@@ -33,7 +33,7 @@ function start() {
 
 function viewAllEmployees() {
     const query = `SELECT * FROM department`;
-    db.query(query, function(err, res){
+    db.query(query, function (err, res) {
         if (err) throw err;
         console.table(res);
         start();
@@ -46,9 +46,9 @@ function viewAllRoles() {
 
 function viewAllDepartments() {
     const query = `SELECT id, name AS "department" FROM department`
-    db.query(query, function(err, res){
+    db.query(query, function (err, res) {
         if (err) throw err;
         console.table(res);
         start();
-});
+    });
 };
