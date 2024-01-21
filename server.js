@@ -4,7 +4,7 @@ const mysql = require('mysql2');
 const db = mysql.createConnection({
    host: 'localhost',
    user: 'root',
-   password: process.env.DB_PASSWORD,
+   password: '3sq`XYQ*ES',
    database: 'employees_db'
 });
 if (db) start();
@@ -53,9 +53,9 @@ function start() {
                 case 'Update An Employee Role':
                     updateEmployeeRole();
                     break;
-                // case 'Quit':
-                //     console.log('Goodbye!');
-                //     process.exit();
+                case 'Quit':
+                    console.log('Goodbye!');
+                    process.exit();
                 default: 
                     start();
             }
@@ -89,18 +89,22 @@ function viewAllRoles() {
     });
 }
 
-function viewAllDepartments(showJson) {
+function viewAllDepartments(showJson, callback) {
     const query = `SELECT id, name AS "department" FROM department`;
     db.query(query, function (err, res) {
-        if (err) throw err;
-        if (showJson) {
-            return res.json()
+        if (err) {
+            console.error(err);
+            callback(err, null);
         } else {
-          console.table(res);
-          start();  
+            if (showJson) {
+                callback(null, res);
+            } else {
+                console.table(res);
+                start();
+            }
         }
     });
-};
+}
 
 function addDepartment() {
     inquirer
@@ -123,46 +127,61 @@ function addDepartment() {
 }
 
 function addRole() {
-    // available before prompt 
-    // const departmentData = viewAllDepartments(true)
-    // console.log(departmentData)
-    // inquirer
-    //     .prompt([
-    //         {
-    //             type: 'list',
-    //             name: 'role',
-    //             message: 'What role would you like to add?',
-    //             choices: [
-    //                 'Sales Lead',
-    //                 'SalesPerson',
-    //                 'Lead Engineer',
-    //                 'Software Engineer',
-    //                 'Account Manager',
-    //                 'Accountant',
-    //                 'Legal Team Lead',
-    //                 'Lawyer'
-    //             ]
-    //         },
-    //         {
-    //             type: 'number',
-    //             name: 'salary',
-    //             message: 'Please enter the salary for the new role:'
-    //         },
-    //         {
-    //             type: 'list',
-    //             name: 'department',
-    //             message: 'What department does this role belong to?',
-    //             choices: [
-    //                 'Engineering',
-    //                 'Finance',
-    //                 'Legal',
-    //                 'Sales'
-    //             ]
-    //         }
-    //     ])
-    //     .then((answers) => {
-    //         const query = `INSERT INTO role (title, salary, department_id)
-    //         VALUES (${answers.role}, ${answers.salary}, ${answers.department})`
-    //     }
-    //     )
+    viewAllDepartments(true, function (err, departmentData) {
+        if (err) {
+            console.error('Error retrieving department data:', err);
+            start(); // Handle the error and return to the main menu
+        } else {
+            // Continue with your logic using departmentData
+            inquirer
+                .prompt([
+                    {
+                        type: 'list',
+                        name: 'role',
+                        message: 'What role would you like to add?',
+                        choices: [
+                            'Sales Lead',
+                            'SalesPerson',
+                            'Lead Engineer',
+                            'Software Engineer',
+                            'Account Manager',
+                            'Accountant',
+                            'Legal Team Lead',
+                            'Lawyer'
+                        ]
+                    },
+                    {
+                        type: 'number',
+                        name: 'salary',
+                        message: 'Please enter the salary for the new role:'
+                    },
+                    {
+                        type: 'list',
+                        name: 'department',
+                        message: 'What department does this role belong to?',
+                        choices: departmentData.map(department => department.department)
+                    }
+                ])
+                .then((answers) => {
+                    // Use the answers and departmentData to construct and execute your query
+                    const selectedDepartment = departmentData.find(department => department.department === answers.department);
+                    const query = `INSERT INTO role (title, salary, department_id)
+                        VALUES (?, ?, ?)`;
+                    const values = [answers.role, answers.salary, selectedDepartment.id];
+                    
+                    db.query(query, values, function (err, res) {
+                        if (err) {
+                            console.error('Error adding role:', err);
+                        } else {
+                            console.log('Role added successfully!');
+                        }
+                        start();
+                    });
+                });
+        }
+    });
+}
+
+function addEmployee() {
+    
 }
