@@ -17,7 +17,6 @@ async function start() {
             message: 'What would you like to do?',
             choices: [
                 'View All Employees',
-                'Update Employee Role',
                 'View All Roles',
                 'Add Roles',
                 'View All Departments',
@@ -31,9 +30,6 @@ async function start() {
             switch (answer.task) {
                 case 'View All Employees':
                     viewAllEmployees();
-                    break;
-                case 'Update Employee Role':
-                    updateEmployeeRole();
                     break;
                 case 'View All Roles':
                     viewAllRoles();
@@ -54,7 +50,7 @@ async function start() {
                     updateEmployeeRole();
                     break;
                 case 'Quit':
-                    console.log('Goodbye!');
+                    console.log('Seeya later scallywag!');
                     process.exit();
                 default:
                     start();
@@ -62,21 +58,38 @@ async function start() {
         })
 }
 
-function viewAllEmployees() {
+function viewAllEmployees(showJson) {
     const query = `SELECT 
-      e.first_name AS employee_first_name,
-      e.last_name AS employee_last_name,
-      e.role_id AS employee_role_id,
-      e.manager_id,
-      m.first_name AS manager_first_name,
-      m.last_name AS manager_last_name
-    FROM employee e
-    LEFT JOIN employee m ON e.manager_id = m.id;
+    e.id AS employee_id,
+    e.first_name AS employee_first_name,
+    e.last_name AS employee_last_name,
+    e.role_id AS employee_role_id,
+    r.title AS employee_role,
+    r.salary AS employee_salary,
+    d.name AS department_name,
+    e.manager_id,
+    m.first_name AS manager_first_name,
+    m.last_name AS manager_last_name
+FROM employee e
+LEFT JOIN role r ON e.role_id = r.id
+LEFT JOIN department d ON r.department_id = d.id
+LEFT JOIN employee m ON e.manager_id = m.id;
   `;
-    db.query(query, function (err, res) {
-        if (err) throw err;
-        console.table(res);
-        start();
+    return new Promise((resolve, reject) => {
+        db.query(query, (err, res) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            if (showJson) {
+                resolve(res);
+            } else {
+                console.table(res);
+                start();
+                resolve();
+            }
+        });
     });
 };
 
@@ -200,7 +213,7 @@ async function addRole() {
 }
 
 function getManagers() {
-    const query = `SELECT manager_id, CONCAT(first_name, ' ', last_name) AS manager_name
+    const query = `SELECT id, manager_id, CONCAT(first_name, ' ', last_name) AS manager_name
     FROM employee
     WHERE manager_id IS NULL;`;
 
@@ -260,7 +273,7 @@ async function addEmployee() {
                 const selectedRole = roleData.filter(role => answers.role === role.title);
                 console.log("roleID: ", selectedRole)
                 // Add matched data with selected data to make a new query
-                const values = [answers.firstName, answers.lastName, selectedRole.id, selectedManager.id];
+                const values = [answers.firstName, answers.lastName, selectedRole[0].id, selectedManager[0].id];
 
                 db.query(query, values, function (err, res) {
                     if (err) {
@@ -276,6 +289,56 @@ async function addEmployee() {
     }
 }
 
-function updateEmployeeRole() {
-    
-}
+async function updateEmployeeRole() {
+    try {
+        const [roleData, employeeData] = await Promise.all([
+            viewAllRoles(true),
+            viewAllEmployees(true)
+        ]);
+
+        let concatedEmployeeNames = employeeData.map(employee => {
+            return {
+                id: employee.employee_id,
+                full_name: `${employee.employee_first_name} ${employee.employee_last_name}`
+            }
+        });
+        console.log(concatedEmployeeNames)
+
+        inquirer
+            .prompt([
+                {
+                    type: 'list',
+                    name: 'employeeName',
+                    message: 'Select which employee you would like to update:',
+                    choices: concatedEmployeeNames.map(employee => employee.full_name)
+                },
+                {
+                    type: 'list',
+                    name: 'newRole',
+                    message: 'Select the new role for the employee:',
+                    choices: roleData.map(role => role.title)
+                },
+            ])
+            .then((answers) => {
+                const query = `UPDATE employee SET role_id = ? WHERE id= ?`;
+
+                const selectedRole = roleData.filter(role => answers.newRole === role.title)
+
+                const selectedEmployee = concatedEmployeeNames.filter(employee => answers.employeeName === employee.full_name)
+
+                const values = [selectedRole.id, selectedEmployee.id];
+
+                db.query(query, values, function (err, res) {
+                    if (err) {
+                        console.error('Error updating employee:', err);
+                    } else {
+                        console.log('Employee updated successfully!');
+                    }
+                    start();
+                })
+            });
+    } catch (error) {
+        console.error('Error updating employee role', error);
+        start()
+    }
+};
