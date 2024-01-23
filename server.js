@@ -71,7 +71,7 @@ async function start() {
                     updateEmployeeRole();
                     break;
                 case 'Quit':
-                    console.log('Seeya later scallywag!');
+                    console.log('See you later!');
                     process.exit();
                 default:
                     start();
@@ -288,10 +288,8 @@ async function addEmployee() {
                         VALUES (?, ?, ?, ?)`;
                 // Find manager id based on chosen manager name
                 const selectedManager = managerData.filter(manager => answers.manager === manager.manager_name);
-                console.log("managerID: ", selectedManager)
                 // Find role id based on chosen role name
                 const selectedRole = roleData.filter(role => answers.role === role.title);
-                console.log("roleID: ", selectedRole)
                 // Add matched data with selected data to make a new query
                 const values = [answers.firstName, answers.lastName, selectedRole[0].id, selectedManager[0].id];
 
