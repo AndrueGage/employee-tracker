@@ -1,6 +1,7 @@
+// Require in node dependencies
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
-
+// mysql2 connection
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -28,7 +29,7 @@ db.connect(err => {
 `);
     start();
 });
-
+// The start function to start the program and also be the homepage for the application after answering a question. Includes inquirer prompts and switch cases so the functions run when you select them in the terminal.
 async function start() {
     inquirer
         .prompt({
@@ -77,7 +78,7 @@ async function start() {
             }
         })
 }
-
+// Function to view all employees in the employees DB. The SQL query gets data from all tables and joins them so you can see Employees, their role, their salary, their id and their managers. 
 function viewAllEmployees(showJson) {
     const query = `SELECT 
     e.id AS employee_id,
@@ -112,7 +113,7 @@ LEFT JOIN employee m ON e.manager_id = m.id;
         });
     });
 };
-
+// Function to view all the current roles in the DB and display the id, salary, and title. 
 function viewAllRoles(showJson) {
     const query = `SELECT role.id, role.title, role.salary, department.name AS department FROM role JOIN department ON role.department_id = department.id`;
 
@@ -133,7 +134,7 @@ function viewAllRoles(showJson) {
         });
     });
 }
-
+// Function to view all departments using showJson as an argument be display the data. The query selects the id and gives it the alias department from the department table
 function viewAllDepartments(showJson) {
     const query = `SELECT id, name AS "department" FROM department`;
     return new Promise((resolve, reject) => {
@@ -153,7 +154,7 @@ function viewAllDepartments(showJson) {
         });
     });
 }
-
+// This function is to add a new department to the department table. 
 function addDepartment() {
     inquirer
         .prompt([
@@ -173,7 +174,7 @@ function addDepartment() {
             });
         });
 }
-
+// An asynchronous function to add a new role. This validates that the role is new before adding it so that there are not two of the same objects returned in the query.
 async function addRole() {
     try {
         const [roleData, departmentData] = await Promise.all([
@@ -211,7 +212,6 @@ async function addRole() {
                 }
             ])
             .then((answers) => {
-                // Use the answers and departmentData to construct and execute your query
                 const selectedDepartment = departmentData.find(department => department.department === answers.department);
                 const query = `INSERT INTO role (title, salary, department_id)
                         VALUES (?, ?, ?)`;
@@ -231,7 +231,7 @@ async function addRole() {
     }
 
 }
-
+// A function to get the managers and display them. Using a query to get the manager id, concatinate their first and last name, and change the alias to manager_name from the employee table. It ensures that it only gets the manager by making sure their manager id is null. 
 function getManagers() {
     const query = `SELECT id, manager_id, CONCAT(first_name, ' ', last_name) AS manager_name
     FROM employee
@@ -249,7 +249,7 @@ function getManagers() {
         });
     });
 }
-
+// Asynchronous function to run when you select add employee. It will then call the viewAllRoles function and getManagers function so that its easier to get that data without repeating your code. 
 async function addEmployee() {
     try {
         const [roleData, managerData] = await Promise.all([
@@ -308,7 +308,7 @@ async function addEmployee() {
         console.error(error);
     }
 }
-
+// Asynchronous function to update an employee's role. When you call this function it wil get data from the viewAllRoles function and viewAllEmployees function so you have an up to date list to update the employee with. 
 async function updateEmployeeRole() {
     try {
         const [roleData, employeeData] = await Promise.all([
